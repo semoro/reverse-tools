@@ -2,6 +2,7 @@ import gdb as gdb
 
 import sys
 from os.path import dirname
+
 sys.path.append(dirname(__file__))
 
 from procMap import ProcMap
@@ -61,17 +62,21 @@ class XBreak(gdb.Command):
         for br in self.breaks:
             br.disable()
 
+    def clear(self):
+        if self.openbp:
+            self.openbp.delete()
+        self.openbp = None
+        old_breaks = self.breaks
+        self.breaks = []
+        for br in old_breaks:
+            if br.bp:
+                br.bp.delete()
+        return
+
     def invoke(self, arg: str, from_tty):
         if arg == "clear":
-            if self.openbp:
-                self.openbp.delete()
-            self.openbp = None
-            old_breaks = self.breaks
-            self.breaks = []
-            for br in old_breaks:
-                if br.bp:
-                    br.bp.delete()
-            return
+            return self.clear()
+
         if not self.openbp:
             self.openbp = OpenBreak(spec="dlopen")
         lib, offset = arg.split("+")
@@ -85,3 +90,10 @@ class OpenBreak(gdb.Breakpoint):
     def stop(self):
         proc_map.rebuild_map()
         xbreak.update_pending()
+
+
+def on_inferior_exit(event):
+    xbreak.on_program_exit()
+
+
+gdb.events.exited.connect(on_inferior_exit)
