@@ -139,16 +139,12 @@ def encode_reg(name: str, value: int):
 
 
 def dump_reg(arch, frame):
-    regs = {}
-    for reg in arch.registers():
-        regs[reg.name] = frame.read_register(reg)
-
     # RDI, RSI, RDX, RCX, R8, and R9
     line = ""
     for block in rline:
         line = line + "  "
         for reg_name in block:
-            line = line + encode_reg(reg_name, regs[reg_name])
+            line = line + encode_reg(reg_name, frame.read_register(reg_name))
         line = line + "\n"
     return line
 
